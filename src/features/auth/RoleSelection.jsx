@@ -1,9 +1,10 @@
 import { useState } from "react";
 
 const roles = [
-  { id: "coder", title: "Программист", icon: "CD", desc: "Пишу алгоритмы и логику робота" },
-  { id: "engineer", title: "Механик", icon: "EN", desc: "Проектирую и собираю детали" },
-  { id: "manager", title: "Капитан", icon: "PM", desc: "Управляю проектом и презентацией" },
+  { id: "participant", title: "Участник", icon: "PT", desc: "Работаю над задачами команды и отправляю достижения" },
+  { id: "mentor", title: "Наставник", icon: "MT", desc: "Следую за прогрессом команды и помогаю развивать навыки" },
+  { id: "verifier", title: "Проверяющий", icon: "VR", desc: "Оцениваю достижения и разрешаю рейтинг" },
+  { id: "admin", title: "Админ", icon: "AD", desc: "Управляю платформой и вижу все панели" },
 ];
 
 const RoleCard = ({ role, selected, onSelect }) => (
@@ -25,7 +26,7 @@ const RoleCard = ({ role, selected, onSelect }) => (
 );
 
 const RoleSelection = ({ onConfirm }) => {
-  const [selectedRole, setSelectedRole] = useState("coder");
+  const [selectedRole, setSelectedRole] = useState("participant");
 
   const changeRole = (value) => {
     setSelectedRole(value);

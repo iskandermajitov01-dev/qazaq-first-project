@@ -1,6 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import RoleSelection from "./RoleSelection.jsx";
 
 const initialForm = {
   firstName: "",
@@ -11,9 +10,36 @@ const initialForm = {
   city: "",
   team: "",
   position: "",
+  skills: "",
+  projects: "",
+  level: "Основы",
+  reputation: "Новичок",
+  progress: 0,
+  github: "",
   password: "",
   confirmPassword: "",
-  role: "coder",
+  role: "participant",
+};
+
+const cityCodes = {
+  "Алматы": "ALA",
+  "Астана": "AST",
+  "Шымкент": "SHY",
+  "Караганда": "KRG",
+  "Атырау": "ATR",
+  "Актобе": "AKT",
+  "Уральск": "URA",
+  "Костанай": "KST",
+  "Павлодар": "PAV",
+  "Тараз": "TRZ",
+  "Кокшетау": "KOK",
+  "Семей": "SEM",
+};
+
+const normalizeListField = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean).map((item) => item.trim());
+  if (typeof value === "string") return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return [];
 };
 
 const findUser = (email) => {
@@ -25,6 +51,17 @@ const saveUser = (user) => {
   const users = JSON.parse(localStorage.getItem("qazaq-users") || "[]");
   const updated = users.filter((item) => item.email.toLowerCase() !== user.email.toLowerCase());
   localStorage.setItem("qazaq-users", JSON.stringify([...updated, user]));
+};
+
+const generateUniqueId = (city) => {
+  const users = JSON.parse(localStorage.getItem("qazaq-users") || "[]");
+  const existingIds = new Set(users.map((user) => user.uniqueId).filter(Boolean));
+  const cityCode = cityCodes[city] || "KZ";
+  let nextId = "";
+  do {
+    nextId = `QFH-${cityCode}-${Math.floor(1000 + Math.random() * 9000)}`;
+  } while (existingIds.has(nextId));
+  return nextId;
 };
 
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -42,7 +79,6 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const buttonLabel = isRegister ? "Зарегистрироваться" : "Войти";
-  const pageTitle = isRegister ? "Регистрация команды" : "Вход в систему";
 
   useEffect(() => {
     setError("");
@@ -74,6 +110,36 @@ const Login = () => {
     navigate("/");
   };
 
+  const quickLogin = (role) => {
+    const demoUser = {
+      firstName: `Demo`,
+      lastName: role.charAt(0).toUpperCase() + role.slice(1),
+      email: `demo-${role}@test.local`,
+      phone: "+7 700 000 0000",
+      age: "20",
+      city: "Demo City",
+      team: "Demo Team",
+      position: "Demo Position",
+      skills: ["Demo"],
+      projects: ["Demo"],
+      level: "Основы",
+      reputation: "Новичок",
+      progress: 100,
+      completedTasks: 0,
+      contributionPoints: 12,
+      role,
+      uniqueId: `QFH-DEMO-${role.slice(0, 3).toUpperCase()}`,
+      github: `demo-${role}`,
+      password: "demo",
+      verified: true,
+      createdAt: new Date().toISOString(),
+      achievements: [
+        { id: 1, title: "Тест демо", status: "verified", points: 10, verifiedAt: "2024-01-01" },
+      ],
+    };
+    loginUser(demoUser);
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     setError("");
@@ -100,7 +166,16 @@ const Login = () => {
         city: form.city,
         team: form.team,
         position: form.position,
+        skills: normalizeListField(form.skills),
+        projects: normalizeListField(form.projects),
+        level: form.level,
+        reputation: form.reputation,
+        progress: Number(form.progress) || 0,
+        completedTasks: 0,
+        contributionPoints: 0,
         role: form.role,
+        github: form.github.trim(),
+        uniqueId: generateUniqueId(form.city),
         password: form.password,
         verified: false,
         createdAt: new Date().toISOString(),
@@ -157,7 +232,7 @@ const Login = () => {
           <div className="mb-8">
             <img src="/branding/logo-first-v2.png" alt="FIRST" className="mb-4 w-40" />
             <p className="text-xs uppercase tracking-[0.2em] text-brand-bean/70">Qazaq Robotech</p>
-            <h2 className="mt-4 text-3xl font-black text-brand-bean">{pageTitle}</h2>
+            <h2 className="mt-4 text-3xl font-black text-brand-bean">{isRegister ? "Регистрация участника" : "Вход в систему"}</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-brand-bean/80">
               {isRegister
                 ? "Создайте профиль участника команды и получите доступ к чату, задачам и обучению."
@@ -274,6 +349,23 @@ const Login = () => {
               )}
 
               {isRegister && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm text-brand-bean">
+                    GitHub username
+                    <input
+                      value={form.github}
+                      onChange={handleChange("github")}
+                      className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                      placeholder="qazaq-robotics"
+                    />
+                  </label>
+                  <div className="rounded-2xl border-2 border-dashed border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean/70">
+                    После регистрации система выдаст уникальный Talent ID. По нему участника можно искать и добавлять в команду.
+                  </div>
+                </div>
+              )}
+
+              {isRegister && (
                 <label className="space-y-2 text-sm text-brand-bean">
                   Позиция / Роль
                   <input
@@ -286,7 +378,72 @@ const Login = () => {
               )}
 
               {isRegister && (
-                <RoleSelection onConfirm={(value) => setForm((prev) => ({ ...prev, role: value }))} />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm text-brand-bean">
+                    Навыки
+                    <input
+                      value={form.skills}
+                      onChange={handleChange("skills")}
+                      className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                      placeholder="C++, Arduino, 3D Print"
+                    />
+                    <p className="text-[11px] text-brand-bean/60">Через запятую</p>
+                  </label>
+                  <label className="space-y-2 text-sm text-brand-bean">
+                    Проекты
+                    <input
+                      value={form.projects}
+                      onChange={handleChange("projects")}
+                      className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                      placeholder="Автономный робот, Презентация"
+                    />
+                    <p className="text-[11px] text-brand-bean/60">Через запятую</p>
+                  </label>
+                </div>
+              )}
+
+              {isRegister && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm text-brand-bean">
+                    Уровень
+                    <select
+                      value={form.level}
+                      onChange={handleChange("level")}
+                      className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                    >
+                      <option>Основы</option>
+                      <option>Участие</option>
+                      <option>Соревнования</option>
+                    </select>
+                  </label>
+                  <label className="space-y-2 text-sm text-brand-bean">
+                    Репутация
+                    <select
+                      value={form.reputation}
+                      onChange={handleChange("reputation")}
+                      className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                    >
+                      <option>Новичок</option>
+                      <option>Активист</option>
+                      <option>Лидер</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {isRegister && (
+                <label className="space-y-2 text-sm text-brand-bean">
+                  Прогресс команды
+                  <input
+                    value={form.progress}
+                    onChange={handleChange("progress")}
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="w-full rounded-2xl border-2 border-brand-bean/20 bg-brand-cream px-4 py-3 text-sm text-brand-bean outline-none"
+                    placeholder="0"
+                  />
+                </label>
               )}
 
               {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -349,6 +506,66 @@ const Login = () => {
               <p className="text-sm font-semibold">Что важно</p>
               <p className="mt-2 text-sm text-brand-bean/80">Всё, что вы введёте при регистрации, сохранится в профиле и поможет команде быстрее начать работу.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-12 w-full max-w-5xl">
+        <div className="rounded-[32px] border-2 border-brand-bean/20 bg-white/95 p-8 shadow-neon">
+          <div className="mb-6 text-center">
+            <p className="text-xs uppercase tracking-[0.2em] text-brand-bean/70">Демонстрация платформы</p>
+            <h2 className="mt-2 text-2xl font-black text-brand-bean">Тестовые панели ролей</h2>
+            <p className="mt-3 max-w-2xl text-sm text-brand-bean/80 mx-auto">
+              Это демонстрационные панели для тестирования различных ролей в системе. Нажмите кнопку ниже, чтобы войти в панель конкретной роли без заполнения полей регистрации.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <button
+              onClick={() => quickLogin("mentor")}
+              className="rounded-3xl border-2 border-brand-bean/20 bg-brand-cream p-5 text-left transition hover:border-brand-bean hover:bg-brand-cream/80"
+            >
+              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-bean text-sm font-bold text-brand-cream">
+                МТ
+              </div>
+              <h3 className="text-sm font-semibold text-brand-bean">Наставник</h3>
+              <p className="mt-2 text-xs text-brand-bean/70">Управляй командой, отслеживай прогресс</p>
+              <button className="mt-4 w-full rounded-2xl bg-brand-mint px-4 py-2 text-xs font-semibold text-brand-bean">
+                Войти как Наставник
+              </button>
+            </button>
+
+            <button
+              onClick={() => quickLogin("verifier")}
+              className="rounded-3xl border-2 border-brand-bean/20 bg-brand-cream p-5 text-left transition hover:border-brand-bean hover:bg-brand-cream/80"
+            >
+              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-bean text-sm font-bold text-brand-cream">
+                ВР
+              </div>
+              <h3 className="text-sm font-semibold text-brand-bean">Проверяющий</h3>
+              <p className="mt-2 text-xs text-brand-bean/70">Проверяй достижения, утверждай рейтинги</p>
+              <button className="mt-4 w-full rounded-2xl bg-brand-mint px-4 py-2 text-xs font-semibold text-brand-bean">
+                Войти как Проверяющий
+              </button>
+            </button>
+
+            <button
+              onClick={() => quickLogin("admin")}
+              className="rounded-3xl border-2 border-brand-bean/20 bg-brand-cream p-5 text-left transition hover:border-brand-bean hover:bg-brand-cream/80"
+            >
+              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-bean text-sm font-bold text-brand-cream">
+                АД
+              </div>
+              <h3 className="text-sm font-semibold text-brand-bean">Администратор</h3>
+              <p className="mt-2 text-xs text-brand-bean/70">Управляй всей системой и метриками</p>
+              <button className="mt-4 w-full rounded-2xl bg-brand-mint px-4 py-2 text-xs font-semibold text-brand-bean">
+                Войти как Админ
+              </button>
+            </button>
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-brand-bean/10 bg-brand-rose/10 p-4 text-center text-xs text-brand-bean/80">
+            ⚠️ Это панели для демонстрации и тестирования различных ролей. Используются тестовые данные.
           </div>
         </div>
       </div>

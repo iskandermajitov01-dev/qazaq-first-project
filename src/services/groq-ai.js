@@ -25,7 +25,7 @@ export const askGroqAI = async (question) => {
         },
         body: JSON.stringify({
           // Заменил устаревшую модель на поддерживаемую
-          model: "llama-3.3-70b-versatile",
+          model: "llama-3.1-8b-instant",
           messages: [
             {
               role: "system",

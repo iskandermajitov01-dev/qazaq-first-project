@@ -3,17 +3,40 @@ import { useAppContext } from "../../store/AppContext.jsx";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { reports, invites, addReport, microTeam, autoAssembleTeam, activityLog, tasks } = useAppContext();
+  const { 
+    reports, 
+    invites, 
+    addReport, 
+    microTeam, 
+    autoAssembleTeam, 
+    activityLog, 
+    tasks, 
+    currentUserProfile 
+  } = useAppContext();
 
-  const donePct = Math.round((tasks.filter((t) => t.status === "done").length / tasks.length) * 100);
+  const donePct = Math.round((tasks.filter((t) => t.status === "done").length / (tasks.length || 1)) * 100);
+  
+  // Логика ролей из входящих изменений
+  const pendingAchievements = (currentUserProfile?.achievements || []).filter((a) => a.status === "pending");
+  const role = currentUserProfile?.role || "participant";
+  const isVerifier = role === "verifier";
+  const isAdmin = role === "admin";
+  const isMentor = role === "mentor";
+  const isParticipant = role === "participant";
 
   return (
     <div className="relative space-y-6">
       <section className="cute-card p-6">
-        <div className="mb-4 flex items-end justify-between">
+        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-brand-bean/60">Прогресс проекта</h3>
             <h2 className="mt-1 text-2xl font-black text-brand-bean">Distributed Team Sprint</h2>
+            <p className="mt-2 text-sm text-brand-bean/70">
+              {isMentor && "Панель наставника: взгляд на команду и прогресс."}
+              {isVerifier && "Панель проверяющего: обрабатывай достижения и подтверждай результаты."}
+              {isAdmin && "Панель администратора: управляй платформой и смотри текущие метрики."}
+              {isParticipant && "Твой рабочий стол участника: состояние задач и прогресс команды."}
+            </p>
           </div>
           <span className="font-mono text-xl font-bold text-brand-bean">{donePct}%</span>
         </div>
@@ -78,9 +101,15 @@ const Dashboard = () => {
                   {item.title} - {item.createdAt}
                 </div>
               ))}
-              <div className="border-l-2 border-brand-rose py-1 pl-3 text-xs text-brand-bean">
-                Приглашено участников: <span className="font-semibold">{invites.length}</span>
-              </div>
+              {isVerifier || isAdmin ? (
+                <div className="border-l-2 border-yellow-500 py-1 pl-3 text-xs text-yellow-700">
+                  Ожидает проверки: <span className="font-semibold">{pendingAchievements.length}</span>
+                </div>
+              ) : (
+                <div className="border-l-2 border-brand-rose py-1 pl-3 text-xs text-brand-bean">
+                  Приглашено участников: <span className="font-semibold">{invites.length}</span>
+                </div>
+              )}
               {activityLog.slice(0, 2).map((log) => (
                 <div key={log.id} className="border-l-2 border-brand-bean/40 py-1 pl-3 text-xs text-brand-bean/80">
                   {log.text}
